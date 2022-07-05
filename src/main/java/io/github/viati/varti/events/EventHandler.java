@@ -32,7 +32,8 @@ public class EventHandler {
    */
   public void add(Object object) {
     if (!conditionHandler.shouldAdd(object)
-        || !object.getClass().isAnnotationPresent(io.github.viati.varti.events.EventListener.class)) return;
+        || !object.getClass().isAnnotationPresent(io.github.viati.varti.events.EventListener.class))
+      return;
     for (Method method : object.getClass().getDeclaredMethods()) {
       if (!method.isAnnotationPresent(EventDefiner.class)) continue;
       EventDefiner eventDefiner = method.getAnnotation(EventDefiner.class);
@@ -41,12 +42,24 @@ public class EventHandler {
         if (param.isEmpty()) return;
         String name = param.get().getSimpleName();
         mkEventMap(name);
-        methodWrappers.put(method, new EventWrapper(object, eventDefiner, method, Arrays.stream(method.getParameterTypes()).findFirst().isPresent()));
+        methodWrappers.put(
+            method,
+            new EventWrapper(
+                object,
+                eventDefiner,
+                method,
+                Arrays.stream(method.getParameterTypes()).findFirst().isPresent()));
         methodWrappers.get(method).setId(name);
         eventMap.get(name).add(methodWrappers.get(method));
       } else {
         mkEventMap(eventDefiner.id());
-        methodWrappers.put(method, new EventWrapper(object, eventDefiner, method, Arrays.stream(method.getParameterTypes()).findFirst().isPresent()));
+        methodWrappers.put(
+            method,
+            new EventWrapper(
+                object,
+                eventDefiner,
+                method,
+                Arrays.stream(method.getParameterTypes()).findFirst().isPresent()));
         methodWrappers.get(method).setId(eventDefiner.id());
         eventMap.get(eventDefiner.id()).add(methodWrappers.get(method));
       }
@@ -67,9 +80,7 @@ public class EventHandler {
 
     if (eventMap.containsKey(className)) {
       mkEventMap(event.getId());
-      eventMap.get(event.getId()).forEach(eventWrapper -> {
-        eventWrapper.setId(event.getId());
-      });
+      eventMap.get(event.getId()).forEach(eventWrapper -> eventWrapper.setId(event.getId()));
       eventMap.get(event.getId()).addAll(eventMap.get(className));
       eventMap.remove(className);
     }
@@ -95,8 +106,8 @@ public class EventHandler {
    * @param object the object
    */
   public synchronized void disable(Object object) {
-    if (!object.getClass().isAnnotationPresent(io.github.viati.varti.events.EventListener.class) || disabled.containsKey(object))
-      return;
+    if (!object.getClass().isAnnotationPresent(io.github.viati.varti.events.EventListener.class)
+        || disabled.containsKey(object)) return;
     disabled.put(object, new ArrayList<>());
     for (Method method : object.getClass().getDeclaredMethods()) {
       if (!method.isAnnotationPresent(EventDefiner.class)) continue;
@@ -121,6 +132,14 @@ public class EventHandler {
       eventMap.get(wrapper.id()).add(wrapper);
     }
     disabled.remove(object);
+  }
+
+  public synchronized void remove(Object object) {
+    disabled.remove(object);
+
+    for (Method method : object.getClass().getDeclaredMethods()) {
+      eventMap.get(methodWrappers.get(method).id()).remove(methodWrappers.get(method));
+    }
   }
 
   private void mkEventMap(String event) {
